@@ -1,0 +1,160 @@
+﻿<!DOCTYPE html>
+<html>
+   <head>
+   </head>
+    <body ng-app="myApp" ng-controller="customersCtrl">
+        <br />
+        <div>
+
+            <div class="table-responsive">
+                <table class="table small">
+                    <thead class="alert-dismissable">
+                        <tr>
+                            <th class="col-md-2">Nazwa</th>
+                            <th class="col-md-2">Data początek</th>
+                            <th class="col-md-2">Data koniec</th>
+                            <th class="col-md-3">Osoba odpowiedzialna</th>
+                            <th class="col-md-1">Typ</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tr ng-repeat="x in myData | filter:mySearchText" data-ng-class='{selected: x.id==selectedRow}' style="word-wrap: break-word">
+                        <td style="display:none">{{ x.id}}</td>
+                        <td class="col-md-2">
+                            {{ x.nazwa }}
+                        </td>
+                        <td class="col-md-2">
+                            {{ x.dataPoczatek | date : "dd.MM.y" }}
+                        </td>
+                        <td class="col-md-2">
+                            {{ x.dataKoniec | date : "dd.MM.y" }}
+                        </td>
+                        <td class="col-md-3">
+                            {{ x.osobaOdpowiedzialna }}
+                        </td>
+                        <td class="col-md-1">
+                            {{ x.typ }}
+                        </td>
+                        <td class="col-md-1">
+                            <button class="btn btn-default btn-sm" data-toggle="modal" data-target="#myModal" ng-click="rowHighilited(x.id,x)">Edytuj</button>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="modal fade" id="myModal" role="dialog">
+                <div class="modal-dialog">
+
+                    <!-- Modal -->
+                    <div class="modal-content">
+                        <div class="modal-header alert-info">
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            <h4 class="modal-title">Edycja danych</h4>
+                        </div> 
+                        <div class="modal-body">
+                            <form name="EdycjaDanych" >
+                                <br>
+                                <div class="form-group">
+                                    <label class="control-label col-md-3">Nazwa:</label>
+                                    <div class="col-md-9 has-error has-feedback">
+                                        <input type="text" name="edycjaNazwa" class="form-control" ng-model="edycjaNazwa" required>
+                                    </div> 
+                                </div>
+                                <br />
+                                <div class="form-group">
+                                    <label class="control-label col-md-3">Data początek:</label>
+                                    <div class="col-md-9 has-error has-feedback">
+                                        <input type="text" class="form-control" ng-model="edycjaDataPoczatek" required>
+                                    </div>
+                                </div>
+                                <br />
+                                <div class="form-group">
+                                    <label class="control-label col-md-3">Data koniec:</label>
+                                    <div class="col-md-9 has-error has-feedback">
+                                        <input type="text" class="form-control" ng-model="edycjaDataKoniec" required>
+                                    </div>
+                                </div> 
+                                <br />
+                                <div class="form-group">
+                                    <label class="control-label col-md-3">Osoba Odpowiedzialna:</label>
+                                    <div class="col-md-9 has-error has-feedback">
+                                        <input type="text" class="form-control" ng-model="edycjaOsobaOdpowiedzialna" required>
+                                    </div>
+                                </div>
+                                <br />
+                                <p hidden>{{edycjaTyp}}</p>
+                            </form>
+                           
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal" ng-disabled="EdycjaDanych.$invalid" ng-click="UpdatePodstawowa()">Zapisz</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Anuluj</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <script>
+            var app = angular.module('myApp', []);
+            var element = null;
+            app.controller('customersCtrl', function ($scope, $http) {
+
+                $scope.PodstawowaId = null;
+                $http.get("/Home/GetAll/")
+                    .then(function (response) { $scope.myData = response.data; });
+
+
+                $scope.rowHighilited = function (row, value) {
+                    element = value;
+                    var d1 = value.dataPoczatek;
+                    var d2 = value.dataKoniec;
+
+                    $scope.PodstawowaId = value.id;
+                    $scope.edycjaNazwa = value.nazwa;
+                    $scope.edycjaDataPoczatek = d1.substring(0, 10);
+                    $scope.edycjaDataKoniec = d2.substring(0, 10);
+                    $scope.edycjaOsobaOdpowiedzialna = value.osobaOdpowiedzialna;
+                    $scope.edycjaTyp = value.typ;
+                };
+
+                $scope.UpdatePodstawowa = function () {
+
+                    var JsovArch = {
+                        id: element.id,
+                        nazwa: element.nazwa,
+                        dataPoczatek: element.dataPoczatek,
+                        dataKoniec: element.dataKoniec,
+                        osobaOdpowiedzialna: element.osobaOdpowiedzialna,
+                        typ: element.typ
+                    }
+                    var JsonPodstawowa = {
+                        id: $scope.PodstawowaId,
+                        nazwa: $scope.edycjaNazwa,
+                        dataPoczatek: $scope.edycjaDataPoczatek,
+                        dataKoniec: $scope.edycjaDataKoniec,
+                        osobaOdpowiedzialna: $scope.edycjaOsobaOdpowiedzialna,
+                        typ: $scope.edycjaTyp,
+                    };
+                   $.ajax({
+                       url: "/Home/PodstawowaEdycja/",
+                       dataType: "json",
+                       type: "Post",
+                       cache: false,
+                       data: {
+                           podstawowa: JsonPodstawowa,
+                           arch: JsovArch
+                       },
+                       success: function (data) {
+                           if (!data.success) {
+                               alert(data.status)
+                           } 
+                       }
+                   });
+                   window.location.reload(true);
+                };
+            });
+        </script>
+    </body>
+</html> 
